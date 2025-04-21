@@ -1,4 +1,6 @@
 //using Magic_vila_API.Logging;
+using Magic_vila_API.Data;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 // This for serilog log implementation in file. 
@@ -6,7 +8,10 @@ Log.Logger = new LoggerConfiguration().MinimumLevel.Debug()
     .WriteTo.File("log/vilalogs.txt", rollingInterval: RollingInterval.Day).CreateLogger();
 
 builder.Host.UseSerilog();
-
+builder.Services.AddDbContext<ApplicationDbContext>(option =>
+{
+    option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultSQLConnection"));
+});
 // Add services to the container.
 //only accept Json and XML format from request API
 builder.Services.AddControllers(option=>
