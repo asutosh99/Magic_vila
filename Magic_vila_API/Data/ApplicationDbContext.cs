@@ -6,12 +6,12 @@ namespace Magic_vila_API.Data
     public class ApplicationDbContext:DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
-        DbSet<Vila> Vilas { get; set; }
+       public DbSet<Vila> Vilas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Vila>().HasData(
-                new Vila
+              new Vila
                 {
                     Name = "Villa1",
                     Id = 1,
@@ -23,7 +23,7 @@ namespace Magic_vila_API.Data
                     Amenity = "",
                     CreatedDate = DateTime.Now
                 },
-                   new Vila
+              new Vila
                    {
                        Id = 2,
                        Name = "Premium Pool Villa",

@@ -1,8 +1,11 @@
 ﻿using Magic_vila_API.Data;
+using Magic_vila_API.Models;
+
 //using Magic_vila_API.Logging;
 using Magic_vila_API.Models.DTO;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Magic_vila_API.Controllers
 {
@@ -12,22 +15,32 @@ namespace Magic_vila_API.Controllers
     {
         private readonly ILogger<magicVilaController> _logger;
 
-        public magicVilaController(ILogger<magicVilaController> logger)
+        /*public magicVilaController(ILogger<magicVilaController> logger)
         {
             _logger = logger;
+        }*/
+
+        private readonly ApplicationDbContext _db;
+
+        public magicVilaController(ILogger<magicVilaController> logger, ApplicationDbContext db)
+        {
+            _logger = logger;
+            _db = db;
         }
+
+
         //This is for custom log implementation 
         /*private readonly ILogging _logger;
         public magicVilaController(ILogging logger) {
             _logger = logger;
         }*/
         [HttpGet]
-        
-        public IEnumerable<VilaDTO> GetMagicVila()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<IEnumerable<VilaDTO>> GetMagicVila()
         {
             _logger.LogInformation("get all Vilas");
            // _logger.Log("get all Villas", "Info");
-            return VilaStore.VilaList;
+            return Ok(_db.Vilas.ToList());
         }
 
         [HttpGet("{Id:int}")]
@@ -43,7 +56,7 @@ namespace Magic_vila_API.Controllers
              //   _logger.Log("getting by Id error Id is Invalid", "Error");
                 return BadRequest();
             }
-            var Vila= VilaStore.VilaList.FirstOrDefault(u => u.Id == Id);
+            var Vila= _db.Vilas.FirstOrDefault(u => u.Id == Id);
             if(Vila == null)
             {
                 return NotFound();
@@ -59,7 +72,7 @@ namespace Magic_vila_API.Controllers
             {
 
             }*/
-            if(VilaStore.VilaList.FirstOrDefault(u => u.Name.ToLower() == VilaDTO.Name)!=null) {
+            if(_db.Vilas.FirstOrDefault(u => u.Name.ToLower() == VilaDTO.Name)!=null) {
                 //return BadRequest("Name already exist");
                  ModelState.AddModelError("customError","Name duplication");
                 return BadRequest(ModelState);
@@ -72,12 +85,22 @@ namespace Magic_vila_API.Controllers
             {
                return StatusCode(StatusCodes.Status500InternalServerError);
             }
-            VilaDTO.Id = VilaStore.VilaList.OrderByDescending(u => u.Id).FirstOrDefault().Id + 1;
             Console.WriteLine(VilaDTO);
-            if (VilaDTO.Id > 0)
+            Vila model=new Vila()
             {
-                VilaStore.VilaList.Add(VilaDTO);
-            }
+                Amenity = VilaDTO.Amenity,
+                Name    = VilaDTO.Name,
+                Details = VilaDTO.Details,  
+                Rate = VilaDTO.Rate,    
+                Sqft = VilaDTO.Sqft,
+                Occupancy = VilaDTO.Occupancy,
+                ImageUrl    = VilaDTO.ImageUrl,
+                Id  = VilaDTO.Id,
+            };
+            
+                _db.Vilas.Add(model);
+            _db.SaveChanges();
+            
             return Ok(VilaDTO);
         }
 
@@ -93,12 +116,13 @@ namespace Magic_vila_API.Controllers
                 return BadRequest();
             }
 
-            var Vila=VilaStore.VilaList.FirstOrDefault(u => u.Id == id);
+            var Vila=_db.Vilas.FirstOrDefault(u => u.Id == id);
             if(Vila == null)
             {
                 return NotFound();
             }
-            VilaStore.VilaList.Remove(Vila);
+            _db.Vilas.Remove(Vila);
+            _db.SaveChanges();
             return NoContent();
         }
 
@@ -112,10 +136,23 @@ namespace Magic_vila_API.Controllers
             {
                 return BadRequest();
             }
-            var vila=VilaStore.VilaList.FirstOrDefault(v => v.Id == id);
-            vila.Name = VilaDTO.Name;
-            vila.sqft = VilaDTO.sqft;
-            vila.occupancy = VilaDTO.occupancy;
+            var vila=_db.Vilas.FirstOrDefault(v => v.Id == id);
+            /*       vila.Name = VilaDTO.Name;
+                   vila.Sqft = VilaDTO.Sqft;
+                   vila.Occupancy = VilaDTO.Occupancy;*/
+            Vila model = new Vila()
+            {
+                Name = VilaDTO.Name,
+                Amenity = VilaDTO.Amenity,
+                Id = VilaDTO.Id,
+                Occupancy = VilaDTO.Occupancy,
+                Rate = VilaDTO.Rate,
+                Sqft = VilaDTO.Sqft,
+            };
+
+            _db.Update(model);
+            _db.SaveChanges();
+
             return NoContent();
         }
         [HttpPatch]
@@ -127,16 +164,42 @@ namespace Magic_vila_API.Controllers
             {
                 return BadRequest();
             }
-            var vila= VilaStore.VilaList.FirstOrDefault(u=>u.Id == id);
+            var vila= _db.Vilas.AsNoTracking().FirstOrDefault(u=>u.Id == id);
             if(vila == null)
             {
                 return BadRequest();
             }
-            PatchObj.ApplyTo(vila,ModelState);
+
+            VilaDTO vilaDTO = new()
+            {
+                Name = vila.Name,
+                Details = vila.Details,
+                Amenity = vila.Amenity,
+                Rate = vila.Rate,
+                Sqft = vila.Sqft,
+                Occupancy = vila.Occupancy,
+                Id = vila.Id,
+                ImageUrl = vila.ImageUrl
+            };
+
+            PatchObj.ApplyTo(vilaDTO,ModelState);
             if(!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
+            Vila model = new()
+            {
+                Name = vilaDTO.Name,
+                ImageUrl = vilaDTO.ImageUrl,
+                Id = vilaDTO.Id,
+                Occupancy = vilaDTO.Occupancy,
+                Rate = vilaDTO.Rate,
+                Sqft = vilaDTO.Sqft,
+                Amenity=vilaDTO.Amenity
+            }; 
+            _db.Vilas.Update(model);
+            _db.SaveChanges();
+
             return NoContent();
         }
     }

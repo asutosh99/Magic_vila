@@ -9,8 +9,8 @@ namespace Magic_vila_API.Models.DTO
         [MaxLength(100)]
         public string Details { get; set; }
         public string Name { get; set; }
-        public int occupancy { get; set; }
-        public int sqft { get; set; }
+        public int Occupancy { get; set; }
+        public int Sqft { get; set; }
         [Required, MaxLength(100)]
         public double Rate { get; set; }
         public string ImageUrl { get; set; }
