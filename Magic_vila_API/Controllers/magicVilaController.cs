@@ -1,8 +1,8 @@
 ﻿using Magic_vila_API.Data;
-using Magic_vila_API.Models;
+//using Magic_vila_API.Logging;
 using Magic_vila_API.Models.DTO;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Magic_vila_API.Controllers
 {
@@ -10,10 +10,23 @@ namespace Magic_vila_API.Controllers
     [ApiController]
     public class magicVilaController : ControllerBase
     {
+        private readonly ILogger<magicVilaController> _logger;
+
+        public magicVilaController(ILogger<magicVilaController> logger)
+        {
+            _logger = logger;
+        }
+        //This is for custom log implementation 
+        /*private readonly ILogging _logger;
+        public magicVilaController(ILogging logger) {
+            _logger = logger;
+        }*/
         [HttpGet]
         
         public IEnumerable<VilaDTO> GetMagicVila()
         {
+            _logger.LogInformation("get all Vilas");
+           // _logger.Log("get all Villas", "Info");
             return VilaStore.VilaList;
         }
 
@@ -24,8 +37,10 @@ namespace Magic_vila_API.Controllers
 
         public ActionResult<VilaDTO> GetMagicVila(int Id)
         {
-            if(Id < 0)
+            if(Id == 0)
             {
+                _logger.LogError("getting by Id error Id is Invalid");
+             //   _logger.Log("getting by Id error Id is Invalid", "Error");
                 return BadRequest();
             }
             var Vila= VilaStore.VilaList.FirstOrDefault(u => u.Id == Id);
@@ -101,6 +116,27 @@ namespace Magic_vila_API.Controllers
             vila.Name = VilaDTO.Name;
             vila.sqft = VilaDTO.sqft;
             vila.occupancy = VilaDTO.occupancy;
+            return NoContent();
+        }
+        [HttpPatch]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult UpdatePatchVila(int id,JsonPatchDocument<VilaDTO> PatchObj)
+        {
+            if(id== null||id < 0  ||PatchObj== null)
+            {
+                return BadRequest();
+            }
+            var vila= VilaStore.VilaList.FirstOrDefault(u=>u.Id == id);
+            if(vila == null)
+            {
+                return BadRequest();
+            }
+            PatchObj.ApplyTo(vila,ModelState);
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             return NoContent();
         }
     }
